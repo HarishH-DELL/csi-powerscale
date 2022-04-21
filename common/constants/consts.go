@@ -67,4 +67,7 @@ const (
 
 	//ParamCSILogLevel csi driver log level
 	ParamCSILogLevel = "CSI_LOG_LEVEL"
+
+	// DefaultPodmonAPIPortNumber is the port number in default to expose internal health APIs
+	DefaultPodmonAPIPortNumber = "8083"
 )

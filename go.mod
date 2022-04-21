@@ -6,6 +6,7 @@ require (
 	github.com/container-storage-interface/spec v1.5.0
 	github.com/cucumber/godog v0.10.0
 	github.com/dell/dell-csi-extensions/common v1.0.0
+	github.com/dell/dell-csi-extensions/podmon v1.0.0
 	github.com/dell/dell-csi-extensions/replication v1.1.0
 	github.com/dell/dell-csi-extensions/volumeGroupSnapshot v1.1.0
 	github.com/dell/gocsi v1.5.0

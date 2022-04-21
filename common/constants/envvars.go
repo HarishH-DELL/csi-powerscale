@@ -60,6 +60,9 @@ const (
 	// EnvNoProbeOnStart indicates whether a probe should be attempted upon start
 	EnvNoProbeOnStart = "X_CSI_ISI_NO_PROBE_ON_START"
 
+	// EnvPodmonAPIPORT indicates the port to be used for exposing podmon API health
+	EnvPodmonAPIPORT = "X_CSI_PODMON_API_PORT"
+
 	// EnvNodeName is the name of a k8s node
 	EnvNodeName = "X_CSI_NODE_NAME"
 
