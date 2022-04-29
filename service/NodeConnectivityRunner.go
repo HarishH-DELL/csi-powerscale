@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"github.com/dell/csi-isilon/common/constants"
 	"github.com/dell/csi-isilon/common/utils"
@@ -47,6 +46,19 @@ func (s *service) setAPIPort(ctx context.Context) {
 	fmt.Printf("set podmon API port to %s", apiPort)
 }
 
+func (s *service) setPollingFrequency(ctx context.Context) int64{
+	pollRate, err := utils.ParseInt64FromContext(ctx, constants.EnvPodmonArrayConnectivityPollRate)
+	if err != nil {
+		log.Debugf("set default pollingFrequency %d seconds", constants.DefaultPodmonPollRate)
+		return constants.DefaultPodmonPollRate
+	}
+	log.Debugf("set pollingFrequency as %d seconds", pollRate)
+	//TODO:: fetch poll rate from env
+	return constants.DefaultPodmonPollRate
+	//return pollRate
+}
+
+
 // MarshalSyncMapToJSON marshal the sync Map to Json
 func MarshalSyncMapToJSON(m *sync.Map) ([]byte, error) {
 	tmpMap := make(map[string]ArrayConnectivityStatus)
@@ -63,15 +75,9 @@ func (s *service) StartAPIService(ctx context.Context) {
 	isPodmonEnabled := utils.ParseBooleanFromContext(ctx, constants.EnvPodmonEnabled)
 	if !isPodmonEnabled {
 		log.Infof("podmon not enabled")
+		return
 	}
-	//Fetch the arrayConnectivityPollRate of podmon and set half of it as pollingFrequency subject to minimum of 30
-	arrayConnectivityPollRate := flag.Int("arrayConnectivityPollRate", 30, "time in seconds to poll array")
-	log.Debugf("fetch arrayConnectivityPollRate %d", arrayConnectivityPollRate)
-	pollingFrequencyInSeconds = int64(*arrayConnectivityPollRate / 2)
-	if pollingFrequencyInSeconds <30 {
-		pollingFrequencyInSeconds =30
-	}
-	log.Debugf("set pollingFrequency as %d seconds", pollingFrequencyInSeconds)
+	pollingFrequencyInSeconds = s.setPollingFrequency(ctx)
 	if strings.EqualFold(s.mode, constants.ModeController) {
 		return
 	}
@@ -79,7 +85,7 @@ func (s *service) StartAPIService(ctx context.Context) {
 	s.startNodeToArrayConnectivityCheck(ctx)
 	//start methods based on mode
 
-	fmt.Println("start api router")
+	log.Info("starting api router")
 	s.apiRouter(ctx)
 }
 
