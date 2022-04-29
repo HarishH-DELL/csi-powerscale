@@ -60,6 +60,9 @@ const (
 	// EnvNoProbeOnStart indicates whether a probe should be attempted upon start
 	EnvNoProbeOnStart = "X_CSI_ISI_NO_PROBE_ON_START"
 
+	// EnvPodmonEnabled indicates that podmon is enabled
+	EnvPodmonEnabled = "X_CSI_PODMON_ENABLED"
+
 	// EnvPodmonAPIPORT indicates the port to be used for exposing podmon API health
 	EnvPodmonAPIPORT = "X_CSI_PODMON_API_PORT"
 

@@ -16,7 +16,6 @@ func (s *service) queryArrayStatus(ctx context.Context, url string) (bool, error
 		}
 	}()
 	log.Infof("Calling API %s", url)
-	client := &http.Client{}
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		log.Errorf("failed to create request for API %s due to %s ", url, err.Error())
@@ -24,8 +23,16 @@ func (s *service) queryArrayStatus(ctx context.Context, url string) (bool, error
 	}
 	req.Header.Add("Accept", "application/json")
 	req.Header.Add("Content-Type", "application/json")
+	log.Infof("request is %+v", req)
+
+	client := &http.Client{}
+
 	resp, err := client.Do(req)
+	log.Infof("response is %+v", resp)
 	if err != nil {
+		if resp != nil && resp.StatusCode == http.StatusFound {
+			log.Errorf("got redirect %+v", resp.Header.Get("Location"))
+		}
 		log.Errorf("failed to call API %s due to %s ", url, err.Error())
 		return false, err
 	}
@@ -42,8 +49,11 @@ func (s *service) queryArrayStatus(ctx context.Context, url string) (bool, error
 		return false, err
 	}
 	log.Infof("API Response as struct %+v\n", statusResponse)
-	//responseObject has last success and alst attempt timestamp in Unix format
-	if (statusResponse.LastAttempt-statusResponse.LastSuccess)> (2*pollingFrequencyInSeconds) {
+	//responseObject has last success and last attempt timestamp in Unix format
+	timeDiff := statusResponse.LastAttempt-statusResponse.LastSuccess
+	tolerance := 2*pollingFrequencyInSeconds
+	log.Debugf("timeDiff %v, tolerance %v", timeDiff, tolerance)
+	if timeDiff <= tolerance {
 		return true, nil
 	}
 	return false, nil

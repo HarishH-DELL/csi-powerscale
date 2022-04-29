@@ -53,9 +53,9 @@ func (s *service) ValidateVolumeHostConnectivity(ctx context.Context, req *podmo
 	for systemID := range systemIDs {
 		log.Infof("Probe of systemID=%s", systemID)
 		// Do a probe of the requested system
-		if err := s.autoProbe(ctx, isiConfig); err != nil {
-			return nil, err
-		}
+		//if err := s.autoProbe(ctx, isiConfig); err != nil {
+		//	return nil, err
+		//}
 
 		// First - check if the node is visible from the array
 		var checkError error
@@ -63,6 +63,7 @@ func (s *service) ValidateVolumeHostConnectivity(ctx context.Context, req *podmo
 		if checkError != nil {
 			return rep, checkError
 		}
+		log.Debugf("connction of %s to %s is %s", systemID, req.NodeId, rep.Connected)
 	}
 	clients, err := isiConfig.isiSvc.IsIOinProgress(ctx)
 	log.Debugf("############## CLIENTS ########### %v", clients)
@@ -101,15 +102,68 @@ func (s *service) checkIfNodeIsConnected(ctx context.Context, arrayID string, no
 	log.Infof("Checking if array %s is connected to node %s", arrayID, nodeID)
 	var message string
 	rep.Connected = false
+
+	nodeName, nodeFQDN, nodeIP, err := utils.ParseNodeID(ctx, nodeID)
+	if err != nil {
+		log.Debugf("failed to parse node ID '%s', return true for otherClientsAlreadyAdded as a safer return value", nodeID)
+		return fmt.Errorf("failed to parse node ID")
+	}
+	log.Debugf("nodeId split to name %s, fqdn %s, IP %s", nodeName, nodeFQDN, nodeIP)
+
+/*	log.Info("check node status")
 	//form url to call array on node
-	url := "http://"+ nodeID + apiPort + arrayStatus+"/"+arrayID
-	connected , err := s.queryArrayStatus(ctx, url)
+	url := "http://" + nodeIP + apiPort + arrayStatus
+	log.Infof("try node status with nodeIP url is --%s--", url)
+	connected, err := s.queryArrayStatus(ctx, url)
+	log.Debugf("query response %v, %+v", connected, err)
+	if err != nil {
+		message = fmt.Sprintf("node connectivity unknown due to %s", err)
+		log.Info(message)
+		rep.Messages = append(rep.Messages, message)
+		log.Errorf(err.Error())
+	}*/
+
+	//form url to call array on node
+	url := "http://" + nodeIP + apiPort + arrayStatus + "/" + arrayID
+	log.Infof("try with nodeIP url is --%s--", url)
+	connected, err := s.queryArrayStatus(ctx, url)
+	log.Debugf("query response %v, %+v", connected, err)
 	if err != nil {
 		message = fmt.Sprintf("connectivity unknown for array %s to node %s due to %s", arrayID, nodeID, err)
 		log.Info(message)
 		rep.Messages = append(rep.Messages, message)
-		return err
+		log.Errorf(err.Error())
 	}
+
+	if err != nil {
+		//form url to call array on node
+		url = "http://" + nodeFQDN + apiPort + arrayStatus + "/" + arrayID
+		log.Info("try with nodeFQDN")
+		connected, err = s.queryArrayStatus(ctx, url)
+		log.Debugf("query response %v, %+v", connected, err)
+		if err != nil {
+			message = fmt.Sprintf("connectivity unknown for array %s to node %s due to %s", arrayID, nodeID, err)
+			log.Info(message)
+			rep.Messages = append(rep.Messages, message)
+			log.Errorf(err.Error())
+		}
+	}
+
+	if err != nil {
+		//form url to call array on node
+		url = "http://" + nodeName + apiPort + arrayStatus + "/" + arrayID
+		log.Info("try with nodename")
+		connected, err = s.queryArrayStatus(ctx, url)
+		log.Debugf("query response %v, %+v", connected, err)
+		if err != nil {
+			message = fmt.Sprintf("connectivity unknown for array %s to node %s due to %s", arrayID, nodeID, err)
+			log.Info(message)
+			rep.Messages = append(rep.Messages, message)
+			log.Errorf(err.Error())
+			return err
+		}
+	}
+
 	if connected {
 		message = fmt.Sprintf("array %s is connected to node %s", arrayID, nodeID)
 	} else {
